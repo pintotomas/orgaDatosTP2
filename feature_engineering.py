@@ -2,6 +2,22 @@ import pandas as pd
 import numpy as np
 from transformar_data import transformar
 
+
+
+# Expensas: Recupero datos y lo convierto a flotante
+def recover_expenses(row):
+    if type(row["expenses"]) == str:
+        try:
+            return float(row["expenses"])
+        except:
+            words = row["expenses"].replace("$"," ").replace("."," ").split(" ")
+            for w in words:
+                if w.isdigit():
+                    return float(w)
+            
+    else:
+        return row["expenses"]
+    
 def propiedad_tiene(cualidades, propiedad):
 
     """Devuelve un 1 si la propiedad tiene alguna de las cualidades en 'cualidades', 0 si no."""
@@ -18,8 +34,8 @@ def find_nearest(array,value):
     return value[idx] #estan raros los nombres
 
 
-def preocesar(df, relleno_nuls = None):
-	"""Antes de correr esto tiene que haber pasado por recuperacion de datos
+def procesar(df, relleno_nuls = None):
+    """Antes de correr esto tiene que haber pasado por recuperacion de datos
     relleno_nuls es un diccionario (feature:valor) que indica con que valor rellenar
     los nulos"""
 
@@ -38,12 +54,6 @@ def preocesar(df, relleno_nuls = None):
 
         transformar(df, f)
 
-    if relleno_nuls:
-        for f in relleno_nuls:
-            df[f].fillna(relleno_nuls[f], inplace = True)
-    else:
-        df.fillna(df.mean(), inplace = True)
-
     #Creo otras columnas:
     buckets_superficies1 = np.arange(0, 200000, 5)
     buckets_superficies2 = np.arange(0,200000,10)
@@ -55,16 +65,58 @@ def preocesar(df, relleno_nuls = None):
     df["surface_total_in_m21"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies1), axis = 1)
     df["surface_total_in_m22"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies2), axis = 1)
     
+
+
 def main():
-    df = pd.read_csv("properati_data_fixed.csv",compression='gzip', low_memory = False)
-    df2 = pd.read_csv("properati_testing_noprice_fixed.csv", compression='gzip', low_memory = False)
-    procesar(df)
-    cols_means = {}
-    #Ver como hacer esto directamente usando el promedio del training set antes de rellenar
-    for col in df_transformada.columns:
-        cols_means[col] = df_transformada[col].mean()
-    procesar(df2, cols_means)
+    #Solo entrenamos con las de 2015 en adelante
+    
+    df_training = pd.read_csv("properati_data_fixed.csv",compression='gzip', low_memory = False)
+    df_training = df_training[df_training["year"] >= 2015]
+    df_testing = pd.read_csv("properati_testing_noprice_fixed.csv", compression='gzip', low_memory = False)
+    print "Se abrieron las dfs"  
+    df_training["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
+    df_testing["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
+   
+    cols_finales = df_testing.columns
+    cols_finales.append("price_aprox_usd")
+    df_training = df_training[columns_df2]  
+    #Saco algunas columnas que no interesan
+    to_drop =["created_on", "operation", "country_name", "lat","lon","title","extra","geonames_id"]
+    for c in to_drop:
+        
+        df_training.drop(c, axis = 1, inplace = True)
+        if c in df_testing.columns:
+            df_testing.drop(c, axis = 1, inplace = True)
+    print "Se dropearon columnas"
+    columnas_train = df_training.columns
+    columnas_testing = df.testing.columns
+    for c in columnas_training:
+        if c not in columnas_testing and c != "price_aprox_usd":
+            print "ERROR: "+c
+            return
+    for c in columnas_testing:
+        if c not in columnas_training and c != "price_aprox_usd":
+            print "Error "+c
+            return
+    print "se procesara df_training"
+    procesar(df_training)
+    estadisticas_training = {}
+    df_training.fillna(df_training.mean(),inplace=True) # Esto despues variarlo con imputacion a ver que resultados da
+    for column in df_training: 
+        estadisticas_training[column] = (df_training[column].mean(), df_training[column].min(), df_training[column].max()) 
+    procesar(df_test_set)
+    for column in df_training:
+        df_test_set.fillna(estadisticas_training[column][0]) #Relleno con promedio del training
+    
+    #Ahora normalizamos
+    for column in df_training:
+        minimo = estadisticas_training[column][1]
+        maximo = estadisticas_training[column][2]
+        df_training[column] = (df_training[column] - minimo)/(maximo - minimo)
+        df_testing[column] = (df_testing[column] - minimo)/(maximo - minimo)
+                
+    
     df.to_csv("training_set.csv", compression = "gzip", index = False)
-    df.to_csv("test_set.csv", compression = "gzip", index = False)
+    df2.to_csv("test_set.csv", compression = "gzip", index = False)
 
 main()
