@@ -70,21 +70,20 @@ def procesar(df, relleno_nuls = None):
 def main():
     #Solo entrenamos con las de 2015 en adelante
     
-    df_training = pd.read_csv("properati_data_fixed.csv",compression='gzip', low_memory = False)
-    df_training = df_training[df_training["year"] >= 2015]
+    df_training = pd.read_csv("2015-2017_fixed_noduplicates_removed_outliers.csv",compression='gzip', low_memory = False)
     df_testing = pd.read_csv("properati_testing_noprice_fixed.csv", compression='gzip', low_memory = False)
-    print "Se abrieron las dfs"  
     df_training["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
     df_testing["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
    
-    cols_finales = df_testing.columns
+    cols_finales = list(df_testing.columns)
     cols_finales.append("price_aprox_usd")
-    df_training = df_training[columns_df2]  
+    df_training = df_training[cols_finales]
+
     #Saco algunas columnas que no interesan
     to_drop =["created_on", "operation", "country_name", "lat","lon","title","extra","geonames_id"]
     for c in to_drop:
-        
-        df_training.drop(c, axis = 1, inplace = True)
+        if c in df_training:
+            df_training.drop(c, axis = 1, inplace = True)
         if c in df_testing.columns:
             df_testing.drop(c, axis = 1, inplace = True)
     print "Se dropearon columnas"
@@ -104,19 +103,29 @@ def main():
     df_training.fillna(df_training.mean(),inplace=True) # Esto despues variarlo con imputacion a ver que resultados da
     for column in df_training: 
         estadisticas_training[column] = (df_training[column].mean(), df_training[column].min(), df_training[column].max()) 
-    procesar(df_test_set)
+    procesar(df_testing)
     for column in df_training:
-        df_test_set.fillna(estadisticas_training[column][0]) #Relleno con promedio del training
+        df_testing.fillna(estadisticas_training[column][0]) #Relleno con promedio del training
     
     #Ahora normalizamos
-    for column in df_training:
+    
+    columnas_normalizar = df_training.columns
+    columnas_normalizar.remove("price_aprox_usd")
+    for column in columnas_normalizar:
         minimo = estadisticas_training[column][1]
         maximo = estadisticas_training[column][2]
         df_training[column] = (df_training[column] - minimo)/(maximo - minimo)
         df_testing[column] = (df_testing[column] - minimo)/(maximo - minimo)
                 
     
-    df.to_csv("training_set.csv", compression = "gzip", index = False)
-    df2.to_csv("test_set.csv", compression = "gzip", index = False)
+ 
+    #re armo los ids, al testing les pongo los de antes para poder hacer bien el submit
+    test_noprice = pd.read_csv("properati_dataset_testing_noprice.csv", low_memory = False)
+    ids = test_noprice["id"].values
+    df_testing["id"] = ids
+    df_training.reset_index(inplace = True)
+    df_training.rename(columns={'index': 'id'}, inplace = True)
+    df_training.to_csv("training_set.csv", compression = "gzip", index = False)
+    df_testing.to_csv("test_set.csv", compression = "gzip", index = False)
 
 main()
