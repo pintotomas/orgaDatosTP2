@@ -1,7 +1,5 @@
 import pandas as pd
 import numpy as np
-from transformar_data import transformar
-
 
 
 # Expensas: Recupero datos y lo convierto a flotante
@@ -41,18 +39,19 @@ def procesar(df, relleno_nuls = None):
 
 
     #Agregamos algunos features
-    cualidades = {"pileta":["pileta","piscina"], "chalet":["chalet"], "patio":["patio"], "esquina":["esquina"], "a estrenar":["a estrenar"], "amenities":["amenities"], "quincho":["quincho"], "cochera": ["cochera"], "transporte":["subte","tren"], "parrilla":["parrilla"],"aire acondicionado":["aire acondicionado"],"cocina":["cocina"],"living":["living"]}
+    cualidades = {"pileta":["pileta","piscina"], "chalet":["chalet"], "patio":["patio"], "esquina":["esquina"], "a estrenar":["a estrenar"], "amenities":["amenities"], "quincho":["quincho"], "cochera": ["cochera"], "transporte":["subte","tren"], "parrilla":["parrilla"],"aire acondicionado":["aire acondicionado"],"cocina":["cocina"],"living":["living"], "antigua":["antigua"]}
 
     for key in cualidades:
         df[key] = df.apply(lambda row: propiedad_tiene(cualidades[key], row), axis = 1)
     
-    string_columns = ['description',"lat-lon" ,'place_name',
+    string_columns = ["lat-lon" ,'place_name',
        'place_with_parent_names', 'property_type', 'state_name']
     
     #Transformo texto a numeros
     for f in string_columns:
 
-        transformar(df, f)
+        df[f] = df.apply(lambda row:  hash(row[f]) if not(pd.isnull(row[f])) else np.nan, axis = 1)
+	
 
     #Creo otras columnas:
     buckets_superficies1 = np.arange(0, 200000, 5)
@@ -64,7 +63,7 @@ def procesar(df, relleno_nuls = None):
     df["rooms2"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_rooms2), axis = 1)
     df["surface_total_in_m21"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies1), axis = 1)
     df["surface_total_in_m22"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies2), axis = 1)
-    
+
 
 
 def main():
@@ -87,8 +86,8 @@ def main():
         if c in df_testing.columns:
             df_testing.drop(c, axis = 1, inplace = True)
     print "Se dropearon columnas"
-    columnas_train = df_training.columns
-    columnas_testing = df.testing.columns
+    columnas_training = df_training.columns
+    columnas_testing = df_testing.columns
     for c in columnas_training:
         if c not in columnas_testing and c != "price_aprox_usd":
             print "ERROR: "+c
@@ -97,35 +96,17 @@ def main():
         if c not in columnas_training and c != "price_aprox_usd":
             print "Error "+c
             return
+
     print "se procesara df_training"
     procesar(df_training)
-    estadisticas_training = {}
-    df_training.fillna(df_training.mean(),inplace=True) # Esto despues variarlo con imputacion a ver que resultados da
-    for column in df_training: 
-        estadisticas_training[column] = (df_training[column].mean(), df_training[column].min(), df_training[column].max()) 
+    print "Se procesara df_testing"
     procesar(df_testing)
-    for column in df_training:
-        df_testing.fillna(estadisticas_training[column][0]) #Relleno con promedio del training
-    
-    #Ahora normalizamos
-    
-    columnas_normalizar = df_training.columns
-    columnas_normalizar.remove("price_aprox_usd")
-    for column in columnas_normalizar:
-        minimo = estadisticas_training[column][1]
-        maximo = estadisticas_training[column][2]
-        df_training[column] = (df_training[column] - minimo)/(maximo - minimo)
-        df_testing[column] = (df_testing[column] - minimo)/(maximo - minimo)
-                
-    
- 
-    #re armo los ids, al testing les pongo los de antes para poder hacer bien el submit
+	#Habia borrado los id's sin querer
     test_noprice = pd.read_csv("properati_dataset_testing_noprice.csv", low_memory = False)
     ids = test_noprice["id"].values
     df_testing["id"] = ids
     df_training.reset_index(inplace = True)
     df_training.rename(columns={'index': 'id'}, inplace = True)
-    df_training.to_csv("training_set.csv", compression = "gzip", index = False)
-    df_testing.to_csv("test_set.csv", compression = "gzip", index = False)
-
+    df_training.to_csv("training_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
+    df_testing.to_csv("test_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
 main()
