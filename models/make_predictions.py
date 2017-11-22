@@ -17,7 +17,7 @@ def make_predictions(model, test_set, final_features, file_name):
 	with open(file_name, 'wb') as csvfile:
     		scorewriter = csv.writer(csvfile, delimiter=',',
                             quotechar=',', quoting=csv.QUOTE_MINIMAL)
-		scorewriter.writerow("id,price_usd")
+		scorewriter.writerow(["id,price_usd"])
     		while i < len(ids):
         		scorewriter.writerow([ids[i],predictions[i]])
         		i+=1
