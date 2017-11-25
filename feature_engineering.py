@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
-
 def propiedad_tiene(cualidades, propiedad):
 
     """Devuelve un 1 si la propiedad tiene alguna de las cualidades en 'cualidades', 0 si no."""
@@ -19,7 +18,7 @@ def find_nearest(array,value):
     return value[idx] #estan raros los nombres
 
 
-def procesar(df, relleno_nuls = None):
+def agregar_features(df, relleno_nuls = None):
     """Antes de correr esto tiene que haber pasado por recuperacion de datos
     relleno_nuls es un diccionario (feature:valor) que indica con que valor rellenar
     los nulos"""
@@ -37,7 +36,7 @@ def procesar(df, relleno_nuls = None):
 		  "transporte_rapido":["subte","tren"],
 		  "transporte_lento":["colectivo","colectivos","linea de colectivo","linea de colectivos"],
 		  "parrilla":["parrilla","parrillas"],
-		  "aire_acondicionado":["aire acondicionado"],
+		  "aire_acondicionado":["aire acondicionado","aires acondicionados","aire acondicionados","aires acondicionado"],
 		  "cocina":["cocina","horno"],
 		  "living":["living","living comedor"],
 		  "comedor":["comedor","living comedor"],
@@ -48,20 +47,32 @@ def procesar(df, relleno_nuls = None):
 		  "seguridad":["seguridad","guardia","vigilancia","camaras de seguridad"],
 		  "terreno":["terreno"],
 		  "gimnasio":["gimnasio","gim","gym"],
-		  "comodidades":["solarium","sauna","jacuzzi","hidromasaje"],
+		  "solarium":["solarium"],
+          "sauna":["sauna"],
+          "jacuzzi":["jacuzzi"],
+          "hidromasaje":["hidromasaje"],
+          "sum":["sum"],
 		  "terreno":["terreno"],
 		  "laundry":["laundry","lavarropas","lavanderia","lavadero"],
 		  "shopping":["shopping"],
 		  "educacion":["colegio","colegios","universidad","biblioteca"],
 		  "buen_estado":["excelente estado","excelente","buen estado"],
 		  "lujoso":["lujoso"],
-		  "vista":["excelente vista", "especatacular vista","ventanal","hermosa vista","hermoso paisaje","paisaje","linda vista"]
+		  "vista":["excelente vista", "especatacular vista","ventanal","hermosa vista","hermoso paisaje","paisaje","linda vista","vista al rio","vista a la ciudad"],
+          "toilette":["toilette"],
+          "palier":["palier"],
+          "parquet":["parquet"],
+          "luminosidad":["luminoso","luminosidada","iluminado","luz"],
+          "terreno":["terreno"],
+          "dormitorio":["dormitorio"],
+          "torre":["torre"],
+          "edificio":["edificio"]
 		 }
 
     for key in cualidades:
         df[key] = df.apply(lambda row: propiedad_tiene(cualidades[key], row), axis = 1)
     
-    string_columns = ["lat-lon" ,'place_name', 'property_type', 'state_name']
+    string_columns = ["lat-lon" ,'place_name', 'property_type', 'state_name','place_with_parent_names']
     
     #Transformo texto a numeros
     for f in string_columns:
@@ -84,44 +95,52 @@ def procesar(df, relleno_nuls = None):
 
 
 def main():
-    #Solo entrenamos con las de 2015 en adelante
-    
     df_training = pd.read_csv("training_set_filling_nans_con_vecinos.csv",compression='gzip', low_memory = False)
-    df_testing = pd.read_csv("properati_testing_noprice_fixed.csv", compression='gzip', low_memory = False)
+    df_testing = pd.read_csv("testing_set_filling_nans_con_vecinos.csv", compression='gzip', low_memory = False)
    
     cols_finales = list(df_testing.columns)
     cols_finales.append("price_aprox_usd")
-    df_training = df_training[cols_finales]
 
     #Saco algunas columnas que no interesan
-    to_drop =["created_on", "operation", "country_name", "lat","lon","title","extra","geonames_id"]
+    to_drop =["created_on", "operation", "country_name", "lat","lon","title","extra","geonames_id","year"]
     for c in to_drop:
         if c in df_training:
             df_training.drop(c, axis = 1, inplace = True)
         if c in df_testing.columns:
             df_testing.drop(c, axis = 1, inplace = True)
-    print "Se dropearon columnas"
-    columnas_training = df_training.columns
-    columnas_testing = df_testing.columns
-    for c in columnas_training:
-        if c not in columnas_testing and c != "price_aprox_usd":
-            print "ERROR: "+c
-            return
-    for c in columnas_testing:
-        if c not in columnas_training and c != "price_aprox_usd":
-            print "Error "+c
-            return
 
-    print "se procesara df_training"
-    procesar(df_training)
-    print "Se procesara df_testing"
-    procesar(df_testing)
-	#Habia borrado los id's sin querer
-    test_noprice = pd.read_csv("properati_dataset_testing_noprice.csv", low_memory = False)
-    ids = test_noprice["id"].values
-    df_testing["id"] = ids
-    df_training.reset_index(inplace = True)
-    df_training.rename(columns={'index': 'id'}, inplace = True)
-    df_training.to_csv("training_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
-    df_testing.to_csv("test_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
+    #Orden de las columnas:
+    df_training = df_training[[u'description', u'expenses', u'floor', u'id', u'lat-lon', u'place_name',
+       u'place_with_parent_names' , u'property_type',
+       u'rooms', u'state_name', u'surface_covered_in_m2',
+       u'surface_total_in_m2',u'price_aprox_usd']]
+
+  
+    print "se estan agregando features a df_training"
+    agregar_features(df_training)
+    print "Se estan agregando features a df_testing"
+    agregar_features(df_testing)
+
+    print "Dropping labels"
+    df_training.drop(labels = ["description"], axis =1, inplace = True)
+    df_testing.drop(labels = ["description"], axis =1, inplace = True)
+
+    print "Normalizing data"
+    columnas_normalizar = list(df_training.columns)
+    columnas_normalizar.remove("price_aprox_usd")
+    columnas_normalizar.remove("id")
+
+    for column in columnas_normalizar:
+    	minimo=df_training[column].min()
+    	maximo=df_training[column].max()
+        df_training[column] = (df_training[column] - minimo)/(maximo - minimo)
+        df_testing[column] = (df_testing[column] - minimo)/(maximo - minimo)
+
+    print "Saving"
+    df_training.to_csv("training_set_normalizado_sacando_nans.csv",compression="gzip", index = False)
+   
+    df_testing.to_csv("testing_set_normalizado_sacando_nans.csv",compression="gzip", index = False)    
+
+    #df_training.to_csv("training_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
+    #df_testing.to_csv("test_set_sin_normalizar_ni_rellenar.csv", compression = "gzip", index = False)
 main()
