@@ -76,9 +76,10 @@ def procesar(df, relleno_nuls = None):
 
     df["rooms1"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_rooms1), axis = 1)
     df["rooms2"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_rooms2), axis = 1)
-    df["surface_total_in_m21"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies1), axis = 1)
-    df["surface_total_in_m22"] = df.apply(lambda row: find_nearest(row["rooms"], buckets_superficies2), axis = 1)
-
+    df["surface_total_in_m21"] = df.apply(lambda row: find_nearest(row["surface_total_in_m2"], buckets_superficies1), axis = 1)
+    df["surface_total_in_m22"] = df.apply(lambda row: find_nearest(row["surface_total_in_m2"], buckets_superficies2), axis = 1)
+    df["surface_covered_in_m21"] = df.apply(lambda row: find_nearest(row["surface_covered_in_m2"], buckets_superficies1), axis = 1)
+    df["surface_covered_in_m22"] = df.apply(lambda row: find_nearest(row["surface_covered_in_m2"], buckets_superficies2), axis = 1)
 
 
 def main():
