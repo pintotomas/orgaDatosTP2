@@ -48,13 +48,13 @@ def procesar(df, relleno_nuls = None):
 		  "seguridad":["seguridad","guardia","vigilancia","camaras de seguridad"],
 		  "terreno":["terreno"],
 		  "gimnasio":["gimnasio","gim","gym"],
-		  "comodidades":["solarium","sauna","jacuzzi","hidromasaje"]
+		  "comodidades":["solarium","sauna","jacuzzi","hidromasaje"],
 		  "terreno":["terreno"],
 		  "laundry":["laundry","lavarropas","lavanderia","lavadero"],
 		  "shopping":["shopping"],
 		  "educacion":["colegio","colegios","universidad","biblioteca"],
 		  "buen_estado":["excelente estado","excelente","buen estado"],
-		  "lujoso":["lujoso"]
+		  "lujoso":["lujoso"],
 		  "vista":["excelente vista", "especatacular vista","ventanal","hermosa vista","hermoso paisaje","paisaje","linda vista"]
 		 }
 
