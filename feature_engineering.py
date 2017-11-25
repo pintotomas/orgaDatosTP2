@@ -60,8 +60,7 @@ def procesar(df, relleno_nuls = None):
     for key in cualidades:
         df[key] = df.apply(lambda row: propiedad_tiene(cualidades[key], row), axis = 1)
     
-    string_columns = ["lat-lon" ,'place_name',
-       'place_with_parent_names', 'property_type', 'state_name']
+    string_columns = ["lat-lon" ,'place_name', 'property_type', 'state_name']
     
     #Transformo texto a numeros
     for f in string_columns:
