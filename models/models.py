@@ -4,6 +4,7 @@ from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
 from make_predictions import make_predictions
+import pickle
 import sys
 
 
@@ -57,7 +58,7 @@ class KNeighborsRegressorParameterSearcher(object):
         return knn
 
 
-def find_best_model(training_set, model, final_features, cant_features):
+def find_best_model(training_set, model, final_features, cant_features, original_features):
 #training_set: el set de training, completo
 #model: el id del modelo a probar (ver arriba los ids implementados)
 #final_features: una lista, puede ser vacia o contener inicialmente algun feature que se quiere que se tenga en cuenta
@@ -65,15 +66,17 @@ def find_best_model(training_set, model, final_features, cant_features):
 #rooms y surface_total_in_m2 ya los consideramos como necesarios)
 
 #:return: modelo fitted al training set con los mejores parametros del modelo y mejores features encontrados
+    features = list(original_features)
     scores_previos = []
     best_score = -float("inf") #Empiezo con un error infinito
     features_best_score = final_features
     best_hiper_parameters = []  
     agregar_nuevo_feature = False #Primera iteracion la hago con rooms y superficie total
     modelo_a_entrenar = implemented_models[model]
+    feature_actual = 0
     while feature_actual < cant_features:   
         print "Inicio de una nueva iteracion"
-        print "Best score actual: "+str(best_score)+", hasta ahora las cols son: "+str(features_best_score)+" y los mejores hiper-parametros son: "+",".join(best_hiper_parameters)
+        print "Best score actual: "+str(best_score)+", hasta ahora las cols son: "+str(features_best_score)+" y los mejores hiper-parametros son: "+str(best_hiper_parameters)
         if agregar_nuevo_feature:            
             final_features.append(features[feature_actual])
 
@@ -89,12 +92,12 @@ def find_best_model(training_set, model, final_features, cant_features):
             final_features.remove(features[feature_actual])
       
         feature_actual += 1
-        scores_previos.append(scores_actuales)
+        scores_previos.append(scores_con_features_actuales)
        
         agregar_nuevo_feature = True #Agrego nuevo feature a partir de la segunda iteracion
         print "Fin de la ultima iteracion"
 
-    print "Best score actual: "+str(best_score)+", hasta ahora las cols son: "+str(features_best_score)+" y los mejores hiper-parametros son: "+",".join(best_hiper_parameters)
+    print "Best score actual: "+str(best_score)+", hasta ahora las cols son: "+str(features_best_score)+" y los mejores hiper-parametros son: "+str(best_hiper_parameters)
     print "Entrenando el mejor modelo hallado..."
     best_model = modelo_a_entrenar.train_and_fit(training_set, features_best_score, best_hiper_parameters)
     return best_model,features_best_score
@@ -117,10 +120,10 @@ def main():
         print ""
         print "Si se quiere probar KNN con determinadas columnas, buscando solamente el mejor k, ingresar: "
         print ""
-        print "train_model KNN <nombre del archivo del training set> <nombre del archivo del test set> <nombre arch donde guardar results>"
+        print "train_model KNN <nombre del archivo del training set> <nombre del archivo del test set> f1,f2,f3.. <nombre arch donde guardar results>"
         print ""
         print "@@@@@LOS ARCHIVOS TRAINING Y TESTING YA TIENEN QUE ESTAR PREPROCESADOS, SIN NINGUN NULL, Y COMPRIMIDOS@@@@@"
-        print "@@@@@Si no se indica, debugging = True y save_model = False@@@@@@@"
+        print "@@@@@Se guarda los resultados en un csv y el modelo en un sav@@@@@@@"
         print "@@@@@Ingresar los features en un formato tipo f1,f2,f3,...,fn@@@@@@@"
         return
 
@@ -148,20 +151,20 @@ def main():
             return
 
         training_set_path = sys.argv[3]
-        #try:    
-        training_set = pd.read_csv(training_set_path)
-        #except IOError:
+        try:    
+        	training_set = pd.read_csv(training_set_path, compression ="gzip")
+        except IOError:
 
-         #   print "No se puede abrir el archivo de training. O ya se encuentra en uso por otro programa, o se indico un path incorrecto"
-         #   return
+            print "No se puede abrir el archivo de training. O ya se encuentra en uso por otro programa, o se indico un path incorrecto"
+            return
 
         testing_set_path = sys.argv[4]
-        #try:
-        testing_set = pd.read_csv(testing_set_path)
-        #except IOError:
+        try:
+            testing_set = pd.read_csv(testing_set_path, compression = "gzip")
+        except IOError:
 
-         #   print "No se puede abrir el archivo de testing. O ya se encuentra en uso por otro programa, o se indico un path incorrecto"
-         #   return
+            print "No se puede abrir el archivo de testing. O ya se encuentra en uso por otro programa, o se indico un path incorrecto"
+            return
 
     file_name = sys.argv[len(sys.argv) - 1]
         
@@ -172,18 +175,17 @@ def main():
         features = list(training_set.columns)
         features.remove("id")
         features.remove("price_aprox_usd")
-        features.remove("rooms")
-        features.remove("surface_total_in_m2")
+        features.remove("surface_covered_in_m2")
         #Cantidad de features a probar con forward selection:
-        cant_features = len(features) - 4 #No tengo en cuenta Id y price_aprox_usd (id no es un feature, price es lo que quiero predecir (target), ni rooms ni superficie total (estos dos features no se descartan nunca)
-        feature_actual = 0
-        final_features = ["rooms","surface_total_in_m2"] #fija que estan estos dos. 
-        info_entrenamiento = find_best_model(training_set, model, final_features, cant_features)
+        cant_features = len(features) - 3 #No tengo en cuenta Id y price_aprox_usd (id no es un feature, price es lo que quiero predecir (target), ni rooms ni superficie total (estos dos features no se descartan nunca)
+        
+        final_features = ["surface_covered_in_m2"] #fija que esta, tiene alta correlacion 
+        info_entrenamiento = find_best_model(training_set, model, final_features, cant_features, features)
 
         best_model = info_entrenamiento[0]
         best_features = info_entrenamiento[1]
-        make_predictions(best_model, test_set, best_features, file_name)
-        return
+        make_predictions(best_model, test_set, best_features, file_name+".csv")
+	pickle.dump(model, open(file_name+".sav", 'wb'))
 
     elif mode.lower() == "train_model":
 
@@ -204,7 +206,7 @@ def main():
 
         best_model = model_to_train.train_and_fit(training_set, final_features, best_hiper_parameters)
         
-        make_predictions(best_model, testing_set, final_features, file_name)
-
+        make_predictions(best_model, testing_set, final_features, file_name+".csv")
+	pickle.dump(model, open(file_name+".sav", 'wb'))
 
 main()
