@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 import pandas as pd
 import numpy as np
 
@@ -6,7 +7,8 @@ def propiedad_tiene(cualidades, propiedad):
     """Devuelve un 1 si la propiedad tiene alguna de las cualidades en 'cualidades', 0 si no."""
     tiene_cualidad = False
     if not(pd.isnull(propiedad["description"])):
-        
+        descripcion = propiedad["description"]
+	descripcion.replace(":"," ").replace("."," ").replace(","," ").replace("-"," ").replace("/"," ").replace("'"," ").replace("¿"," ").replace("?"," ").replace("á","a").replace("é","e").replace("á","a").replace("í"," ").replace("ó","o").replace("ú","u").replace("_"," ")
         for cualidad in cualidades:
             tiene_cualidad = tiene_cualidad or (cualidad in propiedad["description"])
     return int(tiene_cualidad)
@@ -24,7 +26,36 @@ def procesar(df, relleno_nuls = None):
 
 
     #Agregamos algunos features
-    cualidades = {"pileta":["pileta","piscina"], "chalet":["chalet"], "patio":["patio"], "esquina":["esquina"], "a estrenar":["a estrenar"], "amenities":["amenities"], "quincho":["quincho"], "cochera": ["cochera"], "transporte":["subte","tren"], "parrilla":["parrilla"],"aire acondicionado":["aire acondicionado"],"cocina":["cocina"],"living":["living"], "antigua":["antigua"]}
+    cualidades = {"pileta":["pileta","piscina"],
+		  "chalet":["chalet"],
+		  "patio":["patio"],
+		  "esquina":["esquina"],
+		  "estrenar":["estrenar","nuevo"],
+		  "amenities":["amenities"],
+		  "quincho":["quincho"],
+		  "cochera": ["cochera","cocheras","garaje","garage"],
+		  "transporte_rapido":["subte","tren"],
+		  "transporte_lento":["colectivo","colectivos","linea de colectivo","linea de colectivos"],
+		  "parrilla":["parrilla","parrillas"],
+		  "aire_acondicionado":["aire acondicionado"],
+		  "cocina":["cocina","horno"],
+		  "living":["living","living comedor"],
+		  "comedor":["comedor","living comedor"],
+		  "antigua":["antigua","antiguedad"],
+		  "balcon_terraza":["balcon","terraza"],
+		  "suite":["suite"],"hall":["hall"],
+		  "espacios_verdes":["parque","jardin","plaza"],
+		  "seguridad":["seguridad","guardia","vigilancia","camaras de seguridad"],
+		  "terreno":["terreno"],
+		  "gimnasio":["gimnasio","gim","gym"],
+		  "comodidades":["solarium","sauna","jacuzzi","hidromasaje"]
+		  "terreno":["terreno"],
+		  "laundry":["laundry","lavarropas","lavanderia","lavadero"],
+		  "shopping":["shopping"],
+		  "educacion":["colegio","colegios","universidad","biblioteca"],
+		  "buen_estado":["excelente estado","excelente","buen estado"],
+		  "lujoso":["lujoso"]
+		 }
 
     for key in cualidades:
         df[key] = df.apply(lambda row: propiedad_tiene(cualidades[key], row), axis = 1)
