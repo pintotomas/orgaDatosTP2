@@ -8,7 +8,7 @@ def propiedad_tiene(cualidades, propiedad):
     tiene_cualidad = False
     if not(pd.isnull(propiedad["description"])):
         descripcion = propiedad["description"]
-	descripcion.replace(":"," ").replace("."," ").replace(","," ").replace("-"," ").replace("/"," ").replace("'"," ").replace("¿"," ").replace("?"," ").replace("á","a").replace("é","e").replace("á","a").replace("í"," ").replace("ó","o").replace("ú","u").replace("_"," ")
+	descripcion.replace(":"," ").replace("*"," ").replace("."," ").replace(","," ").replace("-"," ").replace("/"," ").replace("'"," ").replace("¿"," ").replace("?"," ").replace("á","a").replace("é","e").replace("á","a").replace("í"," ").replace("ó","o").replace("ú","u").replace("_"," ")
         for cualidad in cualidades:
             tiene_cualidad = tiene_cualidad or (cualidad in propiedad["description"])
     return int(tiene_cualidad)
