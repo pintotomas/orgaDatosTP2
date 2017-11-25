@@ -85,10 +85,8 @@ def procesar(df, relleno_nuls = None):
 def main():
     #Solo entrenamos con las de 2015 en adelante
     
-    df_training = pd.read_csv("2015-2017_fixed_noduplicates_removed_outliers.csv",compression='gzip', low_memory = False)
+    df_training = pd.read_csv("training_set_filling_nans_con_vecinos.csv",compression='gzip', low_memory = False)
     df_testing = pd.read_csv("properati_testing_noprice_fixed.csv", compression='gzip', low_memory = False)
-    df_training["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
-    df_testing["expenses"] = df_training.apply(lambda row: recover_expenses(row), axis = 1)
    
     cols_finales = list(df_testing.columns)
     cols_finales.append("price_aprox_usd")
