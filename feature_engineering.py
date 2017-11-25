@@ -55,6 +55,7 @@ def procesar(df, relleno_nuls = None):
 		  "educacion":["colegio","colegios","universidad","biblioteca"],
 		  "buen_estado":["excelente estado","excelente","buen estado"],
 		  "lujoso":["lujoso"]
+		  "vista":["excelente vista", "especatacular vista","ventanal","hermosa vista","hermoso paisaje","paisaje","linda vista"]
 		 }
 
     for key in cualidades:
