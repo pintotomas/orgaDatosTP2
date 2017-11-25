@@ -1,21 +1,6 @@
 import pandas as pd
 import numpy as np
 
-
-# Expensas: Recupero datos y lo convierto a flotante
-def recover_expenses(row):
-    if type(row["expenses"]) == str:
-        try:
-            return float(row["expenses"])
-        except:
-            words = row["expenses"].replace("$"," ").replace("."," ").split(" ")
-            for w in words:
-                if w.isdigit():
-                    return float(w)
-            
-    else:
-        return row["expenses"]
-    
 def propiedad_tiene(cualidades, propiedad):
 
     """Devuelve un 1 si la propiedad tiene alguna de las cualidades en 'cualidades', 0 si no."""
