@@ -184,7 +184,7 @@ def main():
 
         best_model = info_entrenamiento[0]
         best_features = info_entrenamiento[1]
-        make_predictions(best_model, test_set, best_features, file_name+".csv")
+        make_predictions(best_model, testing_set, best_features, file_name+".csv")
 	pickle.dump(model, open(file_name+".sav", 'wb'))
 
     elif mode.lower() == "train_model":
