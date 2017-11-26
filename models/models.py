@@ -185,7 +185,7 @@ def main():
         best_model = info_entrenamiento[0]
         best_features = info_entrenamiento[1]
         make_predictions(best_model, testing_set, best_features, file_name+".csv")
-	pickle.dump(model, open(file_name+".sav", 'wb'))
+	pickle.dump(best_model, open(file_name+".sav", 'wb'))
 
     elif mode.lower() == "train_model":
 
@@ -207,6 +207,6 @@ def main():
         best_model = model_to_train.train_and_fit(training_set, final_features, best_hiper_parameters)
         
         make_predictions(best_model, testing_set, final_features, file_name+".csv")
-	pickle.dump(model, open(file_name+".sav", 'wb'))
+	pickle.dump(best_model, open(file_name+".sav", 'wb'))
 
 main()
