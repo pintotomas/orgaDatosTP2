@@ -3,9 +3,40 @@ import pandas as pd
 from sklearn.model_selection import cross_val_score
 from sklearn.tree import DecisionTreeRegressor
 from sklearn.neighbors import KNeighborsRegressor
+from sklearn.ensemble import RandomForestRegressor
 from make_predictions import make_predictions
+
 import pickle
 import sys
+
+
+class RandomForestRegressorParameterSearcher(object):
+
+    def train_and_score(self, training_set, final_features):
+
+        """"Devuelve un array de tuplas, donde el primer elemento de cada tupla es el score para esa combinacion de hiper-parametros,
+        se usa cross-validation"""   
+        sample_leaf_options = [1,5,10,50,100,200,500]
+        cantidadDeFeature=len(final_features)
+        actual_data = training_set[final_features]
+        labels = training_set["price_aprox_usd"]
+        scores_actuales = []
+        for leaf_size in sample_leaf_options :
+            print "Ahora probando con: "+str(leaf_size)+" sample_leaf"
+            #cargo datos al modelo
+            ForestRegressor= RandomForestRegressor(n_estimators = 20, n_jobs = -1,random_state =3 ,max_features = "auto", min_samples_leaf = leaf_size)
+            scores = cross_val_score(ForestRegressor, actual_data, labels, cv=40,  scoring='neg_mean_squared_error', n_jobs = -1) 
+            scores_actuales.append((scores.mean(),[leaf_size]))
+        return scores_actuales
+
+    def train_and_fit(self, training_set, final_features, hiperparameters):
+        
+        leaf_size = hiperparameters[0]
+        #cargo datos al modelo
+        ForestRegressor= RandomForestRegressor(n_estimators=20, oob_score = True, n_jobs = -1,random_state =50,max_features = "auto", min_samples_leaf = leaf_size)
+        ForestRegressor.fit(training_set[final_features], training_set["price_aprox_usd"])    
+         
+	return ForestRegressor
 
 
 class DecisionTreeRegressorParameterSearcher(object):
@@ -21,7 +52,7 @@ class DecisionTreeRegressorParameterSearcher(object):
         for x in range(5,40):
             print "Ahora probando con: "+str(x)+" min_samples_split"
             regressor_tree = DecisionTreeRegressor(min_samples_split = x, min_samples_leaf = 15)
-            scores = cross_val_score(regressor_tree, actual_data, labels, cv=20, scoring='neg_mean_squared_error', n_jobs = -1)
+            scores = cross_val_score(regressor_tree, actual_data, labels, cv=40, scoring='neg_mean_squared_error', n_jobs = -1)
             scores_actuales.append((scores.mean(),[x]))
         return scores_actuales
 
@@ -47,7 +78,7 @@ class KNeighborsRegressorParameterSearcher(object):
         for x in range(5,30):
             print "Ahora probando con: "+str(x)+" vecinos"
             knn = KNeighborsRegressor(n_neighbors= x)
-            scores = cross_val_score(knn, actual_data, labels, cv=20, scoring='neg_mean_squared_error', n_jobs = -1)
+            scores = cross_val_score(knn, actual_data, labels, cv=40, scoring='neg_mean_squared_error', n_jobs = -1)
             scores_actuales.append((scores.mean(),[x]))
         return scores_actuales
 
@@ -103,7 +134,7 @@ def find_best_model(training_set, model, final_features, cant_features, original
     return best_model,features_best_score
 
 modes = ["train_model","find_best_model"]
-implemented_models = {"knn":KNeighborsRegressorParameterSearcher(),"decisiontree":  DecisionTreeRegressorParameterSearcher()}
+implemented_models = {"knn":KNeighborsRegressorParameterSearcher(),"decisiontree":  DecisionTreeRegressorParameterSearcher(), "randomforest": RandomForestRegressorParameterSearcher()}
 
 def main():
     
